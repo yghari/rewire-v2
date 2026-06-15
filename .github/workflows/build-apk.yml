@@ -22,9 +22,15 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Accept Android SDK licenses (non-interactive)
+      - name: Accept Android SDK licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Install Android build tools
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
+            "build-tools;34.0.0" \
+            "platforms;android-34" \
+            "platform-tools"
 
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
@@ -33,7 +39,6 @@ jobs:
         run: |
           mkdir -p webapp
           cp rewire.html webapp/index.html
-
           cat > webapp/manifest.json << 'EOF'
           {
             "name": "Rewire",
@@ -58,7 +63,17 @@ jobs:
           python3 -m http.server 8080 > /dev/null 2>&1 &
           sleep 5
 
-      - name: Write Bubblewrap config (skip interactive init)
+      - name: Configure Bubblewrap (JDK + SDK paths)
+        run: |
+          mkdir -p ~/.bubblewrap
+          cat > ~/.bubblewrap/config.json << EOF
+          {
+            "jdkPath": "$JAVA_HOME",
+            "androidSdkPath": "$ANDROID_HOME"
+          }
+          EOF
+
+      - name: Write twa-manifest.json
         run: |
           mkdir -p twa-project
           cat > twa-project/twa-manifest.json << 'EOF'
@@ -99,22 +114,17 @@ jobs:
           }
           EOF
 
-      - name: Configure Bubblewrap JDK/SDK paths
-        run: |
-          mkdir -p ~/.bubblewrap
-          cat > ~/.bubblewrap/config.json << EOF
-          {
-            "jdkPath": "$JAVA_HOME",
-            "androidSdkPath": "$ANDROID_HOME"
-          }
-          EOF
-
-      - name: Generate Android project (no prompts)
+      - name: Generate Android project via bubblewrap init (with retry)
         run: |
           cd twa-project
-          bubblewrap update --skipVersionUpgrade
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt..."
+            bubblewrap update --skipVersionUpgrade && break
+            echo "Attempt $attempt failed, retrying in 10s..."
+            sleep 10
+          done
 
-      - name: Build APK (no prompts)
+      - name: Build APK
         env:
           BUBBLEWRAP_KEYSTORE_PASSWORD: android
           BUBBLEWRAP_KEY_PASSWORD: android
