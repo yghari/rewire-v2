@@ -1,0 +1,74 @@
+name: Build Rewire APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+        
+      - name: Generate icons
+        run: |
+          # Create simple SVG icons and convert to PNG
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+          
+          # Create 192x192 icon
+          convert -size 192x192 xc:#c9a84c -fill '#0b1120' -gravity center -pointsize 100 -annotate 0 "✦" icon-192.png
+          
+          # Create 512x512 icon
+          convert -size 512x512 xc:#c9a84c -fill '#0b1120' -gravity center -pointsize 260 -annotate 0 "✦" icon-512.png
+          
+      - name: Create local server for manifest
+        run: |
+          # Start a simple HTTP server in background
+          python3 -m http.server 8000 &
+          sleep 3
+          
+      - name: Initialize Bubblewrap project
+        run: |
+          bubblewrap init \
+            --manifest http://localhost:8000/manifest.json \
+            --directory twa-project
+            
+      - name: Update TWA configuration
+        run: |
+          cd twa-project
+          # Set the correct host and path
+          sed -i 's|hostToRewrite:.*|hostToRewrite: "localhost:8000"|' twa-manifest.json
+          sed -i 's|startUrl:.*|startUrl: "/rewire.html"|' twa-manifest.json
+          
+      - name: Build APK
+        run: |
+          cd twa-project
+          bubblewrap build
+          
+      - name: Find and rename APK
+        run: |
+          find . -name "*.apk" -exec cp {} ./rewire-app.apk \;
+          
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rewire-APK
+          path: rewire-app.apk
