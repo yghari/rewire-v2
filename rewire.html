@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Rewire — Daily Islamic Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #0b1120;
+    --surface: #111827;
+    --card:    #162033;
+    --border:  #1e2d45;
+    --gold:    #c9a84c;
+    --gold-lt: #e8c97a;
+    --text:    #e8e4da;
+    --muted:   #64748b;
+    --green:   #34d399;
+    --red:     #f87171;
+    --purple:  #8b5cf6;
+    --nav-h:   64px;
+    --pad:     16px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    overflow: hidden;
+  }
+
+  /* STARFIELD */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(1px 1px at 15% 12%, rgba(201,168,76,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 42% 8%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 73% 22%, rgba(201,168,76,0.5) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 88% 5%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 6% 38%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 45%, rgba(201,168,76,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 92% 52%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 28% 65%, rgba(201,168,76,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 67% 72%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 12% 82%, rgba(201,168,76,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 88%, rgba(255,255,255,0.35) 0%, transparent 100%),
+      radial-gradient(1px 1px at 38% 92%, rgba(201,168,76,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 95% 30%, rgba(255,255,255,0.25) 0%, transparent 100%),
+      radial-gradient(1px 1px at 50% 55%, rgba(201,168,76,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 22% 48%, rgba(255,255,255,0.2) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* LAYOUT */
+  #app {
+    position: fixed; inset: 0;
+    max-width: 480px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+  }
+
+  #page-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: calc(var(--nav-h) + 16px);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  #page-container::-webkit-scrollbar { display: none; }
+
+  .page { display: none; padding: var(--pad); animation: fadeIn 0.25s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* BOTTOM NAV */
+  #bottom-nav {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    height: var(--nav-h);
+    background: rgba(17, 24, 39, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    z-index: 100;
+  }
+  .nav-btn {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px;
+    padding: 8px 4px;
+    background: none; border: none;
+    color: var(--muted);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.65rem; font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s;
+    min-height: 44px;
+  }
+  .nav-btn .nav-icon { font-size: 1.25rem; line-height: 1; }
+  .nav-btn.active { color: var(--gold); }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold) 0%, transparent 100%);
+    opacity: 0.35;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  /* GOLD GRADIENT */
+  .gold-gradient { background: linear-gradient(90deg, #c9a84c, #e8c97a); }
+  .gold-text { background: linear-gradient(90deg, #c9a84c, #e8c97a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+  /* BUTTONS */
+  .btn-gold {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px;
+    padding: 12px 20px;
+    background: linear-gradient(90deg, #c9a84c, #e8c97a);
+    color: #0b1120;
+    border: none; border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    min-height: 44px;
+    width: 100%;
+  }
+  .btn-gold:active { opacity: 0.85; transform: scale(0.98); }
+  .btn-ghost {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem; font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+    min-height: 36px;
+  }
+  .btn-ghost:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); }
+
+  /* ARABIC */
+  .arabic {
+    font-family: 'Amiri', serif;
+    direction: rtl;
+    unicode-bidi: embed;
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: calc(var(--nav-h) + 16px);
+    left: 50%; transform: translateX(-50%) translateY(20px);
+    background: linear-gradient(90deg, #c9a84c, #e8c97a);
+    color: #0b1120;
+    padding: 10px 22px;
+    border-radius: 100px;
+    font-size: 0.82rem; font-weight: 700;
+    white-space: nowrap;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+    max-width: 90%;
+    white-space: normal;
+    text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ─── PAGE 1: HOME ─── */
+  .home-header {
+    text-align: center;
+    padding: 20px 0 16px;
+  }
+  .bismillah {
+    font-family: 'Amiri', serif;
+    font-size: 1.5rem;
+    color: var(--gold-lt);
+    direction: rtl;
+    text-shadow: 0 0 20px rgba(201,168,76,0.4);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .home-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .home-date {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* PROGRESS RING */
+  .ring-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    margin: 8px 0 20px;
+  }
+  .ring-svg-wrap {
+    position: relative;
+    width: 110px; height: 110px;
+  }
+  .ring-svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--border); stroke-width: 8; }
+  .ring-fill {
+    fill: none;
+    stroke: url(#ring-grad);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 314;
+    stroke-dashoffset: 314;
+    transition: stroke-dashoffset 0.7s cubic-bezier(0.4,0,0.2,1);
+  }
+  .ring-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .ring-pct {
+    font-size: 1.4rem; font-weight: 800;
+    color: var(--gold-lt);
+    line-height: 1;
+  }
+  .ring-label-small { font-size: 0.6rem; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; }
+  .ring-caption {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: center;
+    font-weight: 500;
+  }
+
+  /* PRAYER CARDS */
+  .prayer-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .prayer-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.1s;
+    min-height: 80px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    user-select: none;
+  }
+  .prayer-card:active { transform: scale(0.95); }
+  .prayer-card.done { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+  .prayer-ar { font-family: 'Amiri', serif; font-size: 0.85rem; color: var(--gold); direction: rtl; }
+  .prayer-en { font-size: 0.6rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .prayer-check { font-size: 0.9rem; color: var(--muted); transition: color 0.2s; }
+  .prayer-card.done .prayer-check { color: var(--gold); }
+
+  /* MORNING CHECKLIST */
+  .checklist { list-style: none; }
+  .check-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(30,45,69,0.7);
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.2s;
+  }
+  .check-item:last-child { border-bottom: none; }
+  .check-box {
+    width: 22px; height: 22px; min-width: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    color: transparent;
+    transition: all 0.2s;
+    margin-top: 1px;
+  }
+  .check-item.done .check-box {
+    background: linear-gradient(135deg, #c9a84c, #e8c97a);
+    border-color: transparent;
+    color: #0b1120;
+  }
+  .check-text { font-size: 0.85rem; line-height: 1.4; color: var(--text); transition: color 0.2s; }
+  .check-item.done .check-text { text-decoration: line-through; color: var(--muted); }
+
+  /* STREAK */
+  .streak-row {
+    display: flex; gap: 8px; justify-content: center;
+    margin-top: 4px;
+  }
+  .streak-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 0.55rem; font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.03em;
+    transition: all 0.2s;
+  }
+  .streak-dot.lit {
+    background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(232,201,122,0.15));
+    border-color: var(--gold);
+    color: var(--gold-lt);
+    box-shadow: 0 0 10px rgba(201,168,76,0.2);
+  }
+  .streak-dot .dot-day { font-size: 0.55rem; }
+  .streak-dot .dot-icon { font-size: 0.75rem; }
+
+  /* ─── PAGE 2: CHECK-INS ─── */
+  .accordion {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .accordion.done { border-color: var(--gold); }
+  .accordion.open { border-color: rgba(201,168,76,0.4); }
+  .acc-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+    min-height: 60px;
+  }
+  .acc-header:active { background: rgba(255,255,255,0.03); }
+  .acc-prayer-info { flex: 1; }
+  .acc-prayer-ar { font-family: 'Amiri', serif; font-size: 1rem; color: var(--gold); }
+  .acc-prayer-en { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+  .acc-prayer-time { font-size: 0.65rem; color: var(--muted); font-weight: 500; }
+  .acc-badge {
+    font-size: 0.65rem; font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .acc-badge.done-badge { border-color: var(--green); color: var(--green); background: rgba(52,211,153,0.1); }
+  .acc-chevron { font-size: 0.85rem; color: var(--muted); transition: transform 0.25s; }
+  .accordion.open .acc-chevron { transform: rotate(180deg); }
+
+  .acc-body {
+    display: none;
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .accordion.open .acc-body { display: block; }
+
+  .micro-task {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(30,45,69,0.5);
+    cursor: pointer; user-select: none;
+  }
+  .micro-task:last-of-type { border-bottom: none; }
+  .micro-box {
+    width: 20px; height: 20px; min-width: 20px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem;
+    color: transparent;
+    transition: all 0.2s;
+  }
+  .micro-task.done .micro-box { background: linear-gradient(135deg, #c9a84c, #e8c97a); border-color: transparent; color: #0b1120; }
+  .micro-label { font-size: 0.82rem; color: var(--text); }
+  .micro-task.done .micro-label { text-decoration: line-through; color: var(--muted); }
+
+  /* AFFIRMATION BLOCK */
+  .affirm-block {
+    background: rgba(11,17,32,0.6);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin: 14px 0;
+  }
+  .affirm-block-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .affirm-text {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: var(--text);
+    font-weight: 500;
+    font-style: italic;
+  }
+  .affirm-text.loading {
+    color: var(--muted);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+  /* ─── PAGE 3: AFFIRM ─── */
+  .hero-affirm-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 20px 20px;
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .quote-mark {
+    position: absolute;
+    top: -10px; left: 10px;
+    font-family: 'Amiri', serif;
+    font-size: 8rem;
+    color: var(--gold);
+    opacity: 0.05;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+  .hero-affirm-text {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    font-weight: 600;
+    color: var(--text);
+    position: relative; z-index: 1;
+    min-height: 80px;
+  }
+  .hero-hint {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 12px;
+    font-style: italic;
+  }
+
+  /* REP COUNTER */
+  .rep-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px;
+    padding: 20px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .rep-number {
+    font-size: 2.5rem; font-weight: 800;
+    color: var(--gold-lt);
+    line-height: 1;
+  }
+  .rep-label { font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+  .rep-btns { display: flex; gap: 10px; width: 100%; }
+  .rep-btn {
+    flex: 1;
+    padding: 12px 8px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 44px;
+  }
+  .rep-btn.active {
+    background: linear-gradient(135deg, rgba(201,168,76,0.2), rgba(232,201,122,0.1));
+    border-color: var(--gold);
+    color: var(--gold-lt);
+  }
+  .rep-btn.complete {
+    background: linear-gradient(90deg, #c9a84c, #e8c97a);
+    border-color: transparent;
+    color: #0b1120;
+  }
+
+  /* GRATITUDE */
+  .grat-textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    resize: none;
+    min-height: 120px;
+    transition: border-color 0.2s;
+    margin-bottom: 10px;
+  }
+  .grat-textarea:focus { outline: none; border-color: var(--gold); }
+  .grat-textarea::placeholder { color: var(--muted); }
+
+  /* ─── PAGE 4: SLEEP ─── */
+  .sleep-card {
+    background: linear-gradient(135deg, #0f1a2e 0%, #1a0f2e 100%);
+    border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 14px;
+    padding: 20px 16px;
+    margin-bottom: 16px;
+  }
+  .sleep-card-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #a78bfa;
+    margin-bottom: 14px;
+  }
+
+  .sleep-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(139,92,246,0.12);
+    cursor: pointer; user-select: none;
+  }
+  .sleep-item:last-child { border-bottom: none; }
+  .sleep-box {
+    width: 22px; height: 22px; min-width: 22px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(139,92,246,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    color: transparent;
+    transition: all 0.2s;
+    margin-top: 1px;
+  }
+  .sleep-item.done .sleep-box { background: linear-gradient(135deg, #8b5cf6, #a78bfa); border-color: transparent; color: #fff; }
+  .sleep-label { font-size: 0.85rem; color: var(--text); line-height: 1.4; }
+  .sleep-item.done .sleep-label { text-decoration: line-through; color: var(--muted); }
+
+  /* SLEEP AFFIRMATION */
+  .sleep-affirm-card {
+    background: linear-gradient(135deg, #0f1a2e, #1a1a3e);
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .sleep-affirm-label {
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #a78bfa; margin-bottom: 10px;
+  }
+  .sleep-affirm-hint {
+    font-size: 0.68rem; color: var(--muted); font-style: italic; margin-top: 10px;
+  }
+
+  /* REFLECTION */
+  .reflection-textarea {
+    width: 100%;
+    background: rgba(15,26,46,0.8);
+    border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 10px;
+    padding: 14px;
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    resize: none;
+    min-height: 130px;
+    transition: border-color 0.2s;
+    margin-bottom: 10px;
+  }
+  .reflection-textarea:focus { outline: none; border-color: #a78bfa; }
+  .reflection-textarea::placeholder { color: var(--muted); }
+
+  /* BTN PURPLE */
+  .btn-purple {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px;
+    padding: 12px 20px;
+    background: linear-gradient(90deg, #7c3aed, #a78bfa);
+    color: #fff;
+    border: none; border-radius: 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    min-height: 44px;
+    width: 100%;
+  }
+  .btn-purple:active { opacity: 0.85; }
+
+  /* UTILITY */
+  .mt-8 { margin-top: 8px; }
+  .mt-12 { margin-top: 12px; }
+  .mt-16 { margin-top: 16px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-12 { margin-bottom: 12px; }
+  .flex-row { display: flex; align-items: center; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; }
+  .gap-8 { gap: 8px; }
+  .w100 { width: 100%; }
+
+  .done-state-label {
+    font-size: 0.7rem; font-weight: 700;
+    color: var(--green);
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* Page header spacing */
+  .page-header { padding-top: 16px; margin-bottom: 6px; }
+
+  /* Weekly stats */
+  .stat-bar-wrap { display: flex; align-items: flex-end; gap: 6px; height: 60px; margin-top: 4px; }
+  .stat-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .stat-bar { width: 100%; background: var(--border); border-radius: 4px 4px 0 0; transition: height 0.5s; min-height: 4px; }
+  .stat-bar.has-data { background: linear-gradient(0deg, #c9a84c, #e8c97a); }
+  .stat-bar-day { font-size: 0.58rem; color: var(--muted); font-weight: 600; }
+
+  /* Hijri badge */
+  .hijri-date {
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: 'Amiri', serif;
+    direction: rtl;
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <!-- PAGE CONTAINER -->
+  <div id="page-container">
+
+    <!-- ── PAGE 1: HOME ── -->
+    <div id="page-home" class="page active">
+      <div class="home-header">
+        <span class="bismillah">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>
+        <div class="home-title">Daily Rewire</div>
+        <div class="home-date" id="home-date"></div>
+        <div class="hijri-date" id="hijri-date"></div>
+      </div>
+
+      <!-- Progress Ring -->
+      <div class="ring-wrap">
+        <div class="ring-svg-wrap">
+          <svg class="ring-svg" width="110" height="110" viewBox="0 0 110 110">
+            <defs>
+              <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#c9a84c"/>
+                <stop offset="100%" stop-color="#e8c97a"/>
+              </linearGradient>
+            </defs>
+            <circle class="ring-bg" cx="55" cy="55" r="50"/>
+            <circle class="ring-fill" id="ring-fill" cx="55" cy="55" r="50"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-pct" id="ring-pct">0%</div>
+            <div class="ring-label-small">DONE</div>
+          </div>
+        </div>
+        <div class="ring-caption" id="ring-caption">Start your day with intention ✦</div>
+      </div>
+
+      <!-- Prayer Tracker -->
+      <div class="section-title">Prayer Tracker</div>
+      <div class="prayer-grid" id="prayer-grid">
+        <!-- injected by JS -->
+      </div>
+
+      <!-- Morning Checklist -->
+      <div class="section-title mt-8">Morning Rewire</div>
+      <div class="card">
+        <ul class="checklist" id="morning-checklist"></ul>
+      </div>
+
+      <!-- 7-Day Streak -->
+      <div class="section-title mt-8">7-Day Streak</div>
+      <div class="card">
+        <div class="streak-row" id="streak-row"></div>
+        <div style="text-align:center;margin-top:12px;font-size:0.72rem;color:var(--muted);">Days with ≥60% completion light up ✦</div>
+      </div>
+
+      <!-- Weekly Stats -->
+      <div class="section-title mt-8">Weekly Progress</div>
+      <div class="card">
+        <div class="stat-bar-wrap" id="stat-bars"></div>
+      </div>
+    </div>
+
+    <!-- ── PAGE 2: CHECK-INS ── -->
+    <div id="page-checkins" class="page">
+      <div class="page-header">
+        <div class="section-title">Post-Prayer Routines</div>
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;">Complete after each prayer for 7× daily mind rewiring.</p>
+      </div>
+      <div id="checkin-list"></div>
+    </div>
+
+    <!-- ── PAGE 3: AFFIRM ── -->
+    <div id="page-affirm" class="page">
+      <div class="page-header">
+        <div class="section-title">Daily Affirmation</div>
+      </div>
+
+      <!-- Hero Affirmation -->
+      <div class="hero-affirm-card">
+        <div class="quote-mark">"</div>
+        <div class="hero-affirm-text" id="hero-affirm-text">Loading your affirmation...</div>
+        <div class="hero-hint">✦ Breathe in. Say it aloud.</div>
+        <div class="flex-between mt-12">
+          <button class="btn-ghost" onclick="regenDailyAffirm()">↺ New</button>
+          <div id="hero-affirm-loading" style="display:none;font-size:0.72rem;color:var(--muted)">Generating...</div>
+        </div>
+      </div>
+
+      <!-- Repetition Counter -->
+      <div class="rep-wrap">
+        <div class="rep-number" id="rep-number">0</div>
+        <div class="rep-label">of 3 repetitions today</div>
+        <div class="rep-btns">
+          <button class="rep-btn" id="rep-1" onclick="tapRep(1)">1st</button>
+          <button class="rep-btn" id="rep-2" onclick="tapRep(2)">2nd</button>
+          <button class="rep-btn" id="rep-3" onclick="tapRep(3)">3rd ✦</button>
+        </div>
+      </div>
+
+      <!-- Gratitude Journal -->
+      <div class="section-title mt-8">Gratitude Journal</div>
+      <div class="card">
+        <textarea class="grat-textarea" id="grat-textarea" placeholder="1. I'm grateful for...&#10;2. Allah blessed me with...&#10;3. Today I appreciate..."></textarea>
+        <button class="btn-gold" onclick="saveGratitude()">Save ✓</button>
+      </div>
+    </div>
+
+    <!-- ── PAGE 4: SLEEP ── -->
+    <div id="page-sleep" class="page">
+      <div class="page-header">
+        <div class="section-title">Night Protocol</div>
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;">The last moments before sleep are when your brain consolidates memory. Make them count.</p>
+      </div>
+
+      <!-- Night Protocol Checklist -->
+      <div class="sleep-card">
+        <div class="sleep-card-title">🌙 Before You Sleep</div>
+        <div id="sleep-checklist"></div>
+      </div>
+
+      <!-- Bedtime Affirmation -->
+      <div class="sleep-affirm-card">
+        <div class="sleep-affirm-label">✦ Bedtime Affirmation</div>
+        <div class="affirm-text" id="sleep-affirm-text">Loading...</div>
+        <div class="sleep-affirm-hint">Read this as you close your eyes.</div>
+        <div class="flex-between mt-12">
+          <button class="btn-ghost" onclick="regenSleepAffirm()">↺ New</button>
+          <div id="sleep-affirm-loading" style="display:none;font-size:0.72rem;color:var(--muted)">Generating...</div>
+        </div>
+      </div>
+
+      <!-- Tonight's Reflection -->
+      <div class="section-title">Tonight's Reflection</div>
+      <div class="card" style="background:linear-gradient(135deg,#0f1a2e,#1a0f2e);border-color:rgba(139,92,246,0.2)">
+        <textarea class="reflection-textarea" id="sleep-note" placeholder="What did Allah bless you with today?&#10;&#10;What belief did you catch and replace?&#10;&#10;What will tomorrow's version of you do differently?"></textarea>
+        <button class="btn-purple" onclick="saveSleepNote()">Save Reflection ✓</button>
+      </div>
+    </div>
+
+  </div><!-- /page-container -->
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-page="home" onclick="switchPage('home',this)">
+      <span class="nav-icon">🏠</span>Home
+    </button>
+    <button class="nav-btn" data-page="checkins" onclick="switchPage('checkins',this)">
+      <span class="nav-icon">🤲</span>Check-ins
+    </button>
+    <button class="nav-btn" data-page="affirm" onclick="switchPage('affirm',this)">
+      <span class="nav-icon">✦</span>Affirm
+    </button>
+    <button class="nav-btn" data-page="sleep" onclick="switchPage('sleep',this)">
+      <span class="nav-icon">🌙</span>Sleep
+    </button>
+  </nav>
+</div>
+
+<!-- SVG Gradient Defs (hidden) -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="ring-grad-def" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c9a84c"/>
+      <stop offset="100%" stop-color="#e8c97a"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<script>
+/* ══════════════════════════════════════════════
+   REWIRE — Daily Islamic Mind Companion
+   All state in localStorage, AI via Anthropic API
+══════════════════════════════════════════════ */
+
+const TODAY = new Date().toISOString().slice(0,10);
+const SK = 'rewire_' + TODAY;
+
+// ── PRAYERS CONFIG ──
+const PRAYERS = [
+  { id: 'fajr',    ar: 'الفجر',   en: 'Fajr',    time: 'Dawn' },
+  { id: 'dhuhr',   ar: 'الظهر',   en: 'Dhuhr',   time: 'Midday' },
+  { id: 'asr',     ar: 'العصر',   en: 'Asr',     time: 'Afternoon' },
+  { id: 'maghrib', ar: 'المغرب',  en: 'Maghrib',  time: 'Sunset' },
+  { id: 'isha',    ar: 'العشاء',  en: 'Isha',     time: 'Night' },
+];
+
+// ── HABITS CONFIG ──
+const HABITS = [
+  { id: 'dhikr',    label: 'Morning dhikr — SubhanAllah 33×, Alhamdulillah 33×, Allahu Akbar 33×' },
+  { id: 'quran',    label: 'Read Quran — even one ayah with reflection' },
+  { id: 'affirm',   label: 'Say today\'s affirmation aloud 3 times' },
+  { id: 'gratitude',label: 'Write 3 things you\'re grateful for' },
+  { id: 'move',     label: 'Move your body — walk, stretch, or pray Fajr on time' },
+  { id: 'belief',   label: 'Catch one "I can\'t" thought — replace it with بإذن الله' },
+];
+
+// ── SLEEP ITEMS ──
+const SLEEP_ITEMS = [
+  { id: 's_phone',  label: 'Put phone away — screens off 30 min before sleep' },
+  { id: 's_wudu',   label: 'Make wudu (ablution) before lying down' },
+  { id: 's_ayat',   label: 'Read Ayatul Kursi — protection for the night' },
+  { id: 's_dhikr',  label: 'SubhanAllah 33 × Alhamdulillah 33 × Allahu Akbar 34' },
+  { id: 's_dua',    label: 'Night du\'a — اللَّهُمَّ بِاسْمِكَ أَمُوتُ وَأَحْيَا' },
+  { id: 's_affirm', label: 'Read bedtime affirmation below aloud — feel it' },
+  { id: 's_side',   label: 'Sleep on your right side, facing Qibla if possible' },
+];
+
+// ── MICRO TASKS FOR CHECK-INS ──
+function getMicroTasks(prayerId) {
+  const hasSunnah = ['fajr','dhuhr','asr','maghrib'].includes(prayerId);
+  return [
+    { id: 't_sunnah', label: hasSunnah ? 'Pray sunnah (2–4 raka\'at)' : 'Pray witr or tahajjud' },
+    { id: 't_dhikr',  label: 'SubhanAllah 33 × Alhamdulillah 33 × Allahu Akbar 34' },
+    { id: 't_dua',    label: 'Make personal du\'a — speak to Allah freely' },
+    { id: 't_affirm', label: 'Read the affirmation below aloud with full belief' },
+  ];
+}
+
+// ── DEFAULT STATE ──
+function defaultState() {
+  const prayers = {};
+  PRAYERS.forEach(p => prayers[p.id] = false);
+  const habits = {};
+  HABITS.forEach(h => habits[h.id] = false);
+  const checkins = {};
+  PRAYERS.forEach(p => {
+    const tasks = {};
+    getMicroTasks(p.id).forEach(t => tasks[t.id] = false);
+    checkins[p.id] = { tasks, affirmText: '', done: false };
+  });
+  const sleep = {};
+  SLEEP_ITEMS.forEach(s => sleep[s.id] = false);
+  return {
+    prayers, habits, checkins,
+    grat: '', sleep, sleepNote: '', repCount: 0,
+    dailyAffirm: '', sleepAffirm: '',
+    version: 2
+  };
+}
+
+// ── LOAD/SAVE STATE ──
+let state = (() => {
+  try {
+    const raw = localStorage.getItem(SK);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Merge with default to handle new keys
+      const def = defaultState();
+      return Object.assign(def, parsed);
+    }
+  } catch(e) {}
+  return defaultState();
+})();
+
+function saveState() {
+  try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e) {}
+}
+
+// ── STREAK ──
+function loadStreak() {
+  try { return JSON.parse(localStorage.getItem('rewire_streak') || '[]'); } catch(e) { return []; }
+}
+function saveStreak(arr) {
+  try { localStorage.setItem('rewire_streak', JSON.stringify(arr)); } catch(e) {}
+}
+
+function updateStreak() {
+  const pct = calcProgress();
+  let streak = loadStreak();
+  if (pct >= 60) {
+    if (!streak.includes(TODAY)) {
+      streak.push(TODAY);
+      // Keep only last 60 days
+      if (streak.length > 60) streak = streak.slice(-60);
+      saveStreak(streak);
+    }
+  }
+  return streak;
+}
+
+// ── PROGRESS ──
+function calcProgress() {
+  let done = 0;
+  PRAYERS.forEach(p => { if (state.prayers[p.id]) done++; });
+  HABITS.forEach(h => { if (state.habits[h.id]) done++; });
+  PRAYERS.forEach(p => { if (state.checkins[p.id] && state.checkins[p.id].done) done++; });
+  const total = 5 + 6 + 5;
+  return Math.round((done / total) * 100);
+}
+
+function getCaption(pct) {
+  if (pct === 0) return 'Start your day with intention ✦';
+  if (pct <= 20) return 'You\'ve begun — بإذن الله 🌙';
+  if (pct <= 40) return 'Growing stronger in faith 🌿';
+  if (pct <= 60) return 'More than halfway — مَا شَاءَ ٱللَّٰهُ';
+  if (pct <= 80) return 'Almost there — stay the course ✦';
+  return 'Full day. Allah sees your effort 🤲';
+}
+
+function updateRing() {
+  const pct = calcProgress();
+  const fill = document.getElementById('ring-fill');
+  const pctEl = document.getElementById('ring-pct');
+  const capEl = document.getElementById('ring-caption');
+  if (fill) {
+    const offset = 314 - (314 * pct / 100);
+    fill.style.strokeDashoffset = offset;
+  }
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (capEl) capEl.textContent = getCaption(pct);
+}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── DATE ──
+function formatDate() {
+  const d = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()} ${d.getFullYear()}`;
+}
+
+// Approximate Hijri date calculation
+function getHijriDate() {
+  const d = new Date();
+  // Simple approximate Hijri conversion
+  const jd = Math.floor((d.getTime() / 86400000) + 2440587.5);
+  const l = jd - 1948440 + 10632;
+  const n = Math.floor((l - 1) / 10631);
+  const ll = l - 10631 * n + 354;
+  const j = Math.floor((10985 - ll) / 5316) * Math.floor((50 * ll) / 17719) + Math.floor(ll / 5670) * Math.floor((43 * ll) / 15238);
+  const ll2 = ll - Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) - Math.floor(j / 16) * Math.floor((15238 * j) / 43) + 29;
+  const m = Math.floor((24 * ll2) / 709);
+  const day = ll2 - Math.floor((709 * m) / 24);
+  const y = 30 * n + j - 30;
+  const hijriMonths = ['Muharram','Safar','Rabi\' al-Awwal','Rabi\' al-Thani','Jumada al-Awwal','Jumada al-Thani','Rajab','Sha\'ban','Ramadan','Shawwal','Dhu al-Qi\'dah','Dhu al-Hijjah'];
+  return `${day} ${hijriMonths[m - 1]} ${y} AH`;
+}
+
+// ── NAVIGATION ──
+function switchPage(pageId, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  if (btn) btn.classList.add('active');
+  // Lazy-init pages
+  if (pageId === 'affirm' && !state.dailyAffirm) fetchDailyAffirm();
+  if (pageId === 'sleep' && !state.sleepAffirm) fetchSleepAffirm();
+}
+
+// ── ANTHROPIC API ──
+async function callClaude(prompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) throw new Error('API error ' + res.status);
+  const data = await res.json();
+  return data.content[0].text.trim();
+}
+
+// ── DAILY AFFIRMATION ──
+async function fetchDailyAffirm() {
+  const el = document.getElementById('hero-affirm-text');
+  const load = document.getElementById('hero-affirm-loading');
+  if (el) { el.classList.add('loading'); el.textContent = 'Generating your affirmation...'; }
+  if (load) load.style.display = 'flex';
+  try {
+    const text = await callClaude(
+      'Generate one powerful daily affirmation for a Muslim rewiring their mind for success, deep faith in Allah, loving life, and positivity. 1-3 sentences. Rooted in tawakkul. Present tense, first person. May include one Arabic phrase naturally. Output ONLY the affirmation, nothing else.'
+    );
+    state.dailyAffirm = text;
+    saveState();
+    if (el) { el.textContent = text; el.classList.remove('loading'); }
+  } catch(e) {
+    const fallback = 'I walk this day with Allah as my guide. Every challenge is a gift in disguise — بإذن الله, I rise stronger with every prayer.';
+    state.dailyAffirm = fallback;
+    if (el) { el.textContent = fallback; el.classList.remove('loading'); }
+  }
+  if (load) load.style.display = 'none';
+}
+
+function regenDailyAffirm() {
+  state.dailyAffirm = '';
+  saveState();
+  fetchDailyAffirm();
+}
+
+// ── SLEEP AFFIRMATION ──
+async function fetchSleepAffirm() {
+  const el = document.getElementById('sleep-affirm-text');
+  const load = document.getElementById('sleep-affirm-loading');
+  if (el) { el.classList.add('loading'); el.textContent = 'Generating...'; }
+  if (load) load.style.display = 'flex';
+  try {
+    const text = await callClaude(
+      'Generate one peaceful, powerful bedtime affirmation for a Muslim. Themes: gratitude to Allah, trust in His plan, growth mindset, restful surrender. 1-2 sentences. May include one Arabic phrase naturally. Output ONLY the affirmation, nothing else.'
+    );
+    state.sleepAffirm = text;
+    saveState();
+    if (el) { el.textContent = text; el.classList.remove('loading'); }
+  } catch(e) {
+    const fallback = 'I rest in the peace of Allah\'s plan — الحمد لله for this day, and for the person I am becoming with each breath.';
+    state.sleepAffirm = fallback;
+    if (el) { el.textContent = fallback; el.classList.remove('loading'); }
+  }
+  if (load) load.style.display = 'none';
+}
+
+function regenSleepAffirm() {
+  state.sleepAffirm = '';
+  saveState();
+  fetchSleepAffirm();
+}
+
+// ── PRAYER CHECK-IN AFFIRMATION ──
+async function fetchCheckinAffirm(prayerId) {
+  const p = PRAYERS.find(x => x.id === prayerId);
+  const el = document.getElementById('ci-affirm-' + prayerId);
+  if (!el) return;
+  el.classList.add('loading');
+  el.textContent = 'Generating affirmation...';
+  try {
+    const text = await callClaude(
+      `Generate one short powerful affirmation (1-2 sentences) for a Muslim who just completed their ${p.en} prayer. Rooted in tawakkul, success mindset, loving Allah and life. Present tense, first person. May include one Arabic phrase naturally. Output ONLY the affirmation, nothing else.`
+    );
+    state.checkins[prayerId].affirmText = text;
+    saveState();
+    el.textContent = text;
+    el.classList.remove('loading');
+  } catch(e) {
+    const fallback = `After ${p.en}, I am renewed. Allah's mercy flows through me and I move forward with certainty — بإذن الله.`;
+    state.checkins[prayerId].affirmText = fallback;
+    el.textContent = fallback;
+    el.classList.remove('loading');
+  }
+}
+
+// ── REPETITION COUNTER ──
+function tapRep(num) {
+  if (state.repCount >= num) {
+    // Allow un-tapping
+    state.repCount = num - 1;
+  } else {
+    state.repCount = num;
+  }
+  saveState();
+  updateRepUI();
+  if (state.repCount === 3) {
+    state.habits.affirm = true;
+    saveState();
+    renderMorningChecklist();
+    updateRing();
+    showToast('مَا شَاءَ ٱللَّٰهُ — 3 repetitions done! ✦');
+  }
+}
+
+function updateRepUI() {
+  const numEl = document.getElementById('rep-number');
+  if (numEl) numEl.textContent = state.repCount;
+  [1,2,3].forEach(i => {
+    const btn = document.getElementById('rep-' + i);
+    if (!btn) return;
+    btn.classList.remove('active','complete');
+    if (i < state.repCount) btn.classList.add('complete');
+    else if (i === state.repCount) btn.classList.add('complete');
+    // Next one to tap gets 'active' style
+    if (i === state.repCount + 1) btn.classList.add('active');
+  });
+}
+
+// ── PRAYER GRID (HOME) ──
+function renderPrayerGrid() {
+  const grid = document.getElementById('prayer-grid');
+  if (!grid) return;
+  grid.innerHTML = PRAYERS.map(p => `
+    <div class="prayer-card ${state.prayers[p.id] ? 'done' : ''}" 
+         onclick="togglePrayer('${p.id}')" id="pc-${p.id}">
+      <div class="prayer-ar">${p.ar}</div>
+      <div class="prayer-en">${p.en}</div>
+      <div class="prayer-check">${state.prayers[p.id] ? '✦' : '○'}</div>
+    </div>
+  `).join('');
+}
+
+function togglePrayer(prayerId) {
+  state.prayers[prayerId] = !state.prayers[prayerId];
+  saveState();
+  renderPrayerGrid();
+  updateRing();
+  updateStreak();
+  renderStreakRow();
+  renderStatBars();
+  const p = PRAYERS.find(x => x.id === prayerId);
+  if (state.prayers[prayerId]) {
+    showToast(`الله أكبر — ${p.en} logged 🌙`);
+  } else {
+    showToast(`${p.en} unmarked`);
+  }
+}
+
+// ── MORNING CHECKLIST ──
+function renderMorningChecklist() {
+  const list = document.getElementById('morning-checklist');
+  if (!list) return;
+  list.innerHTML = HABITS.map(h => `
+    <li class="check-item ${state.habits[h.id] ? 'done' : ''}" onclick="toggleHabit('${h.id}')" id="hi-${h.id}">
+      <div class="check-box">${state.habits[h.id] ? '✓' : ''}</div>
+      <div class="check-text">${h.label}</div>
+    </li>
+  `).join('');
+}
+
+function toggleHabit(habitId) {
+  state.habits[habitId] = !state.habits[habitId];
+  saveState();
+  renderMorningChecklist();
+  updateRing();
+  updateStreak();
+  renderStreakRow();
+  if (state.habits[habitId]) showToast('Habit checked ✦');
+}
+
+// ── STREAK ROW ──
+function renderStreakRow() {
+  const row = document.getElementById('streak-row');
+  if (!row) return;
+  const streak = loadStreak();
+  const days = ['M','T','W','T','F','S','S'];
+  const now = new Date();
+  row.innerHTML = Array.from({length: 7}, (_, i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() - (6 - i));
+    const dateStr = d.toISOString().slice(0,10);
+    const lit = streak.includes(dateStr);
+    const dayIdx = d.getDay();
+    const dayMap = [6,0,1,2,3,4,5]; // Mon=0
+    return `<div class="streak-dot ${lit ? 'lit' : ''}">
+      <span class="dot-day">${days[dayMap[dayIdx]]}</span>
+      <span class="dot-icon">${lit ? '✦' : '·'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── STAT BARS ──
+function renderStatBars() {
+  const container = document.getElementById('stat-bars');
+  if (!container) return;
+  const days = ['M','T','W','T','F','S','S'];
+  const now = new Date();
+  const bars = Array.from({length: 7}, (_, i) => {
+    const d = new Date(now);
+    d.setDate(now.getDate() - (6 - i));
+    const dateStr = d.toISOString().slice(0,10);
+    const dayIdx = d.getDay();
+    const dayMap = [6,0,1,2,3,4,5];
+    let pct = 0;
+    if (dateStr === TODAY) {
+      pct = calcProgress();
+    } else {
+      try {
+        const raw = localStorage.getItem('rewire_' + dateStr);
+        if (raw) {
+          const s = JSON.parse(raw);
+          let done = 0;
+          PRAYERS.forEach(p => { if (s.prayers && s.prayers[p.id]) done++; });
+          HABITS.forEach(h => { if (s.habits && s.habits[h.id]) done++; });
+          PRAYERS.forEach(p => { if (s.checkins && s.checkins[p.id] && s.checkins[p.id].done) done++; });
+          pct = Math.round((done / 16) * 100);
+        }
+      } catch(e) {}
+    }
+    return { day: days[dayMap[dayIdx]], pct };
+  });
+  const maxH = 52;
+  container.innerHTML = bars.map(b => `
+    <div class="stat-bar-col">
+      <div class="stat-bar ${b.pct > 0 ? 'has-data' : ''}" style="height:${Math.max(4, Math.round(b.pct/100*maxH))}px"></div>
+      <div class="stat-bar-day">${b.day}</div>
+    </div>
+  `).join('');
+}
+
+// ── CHECK-INS PAGE ──
+function renderCheckins() {
+  const list = document.getElementById('checkin-list');
+  if (!list) return;
+  list.innerHTML = PRAYERS.map(p => {
+    const ci = state.checkins[p.id];
+    return `
+    <div class="accordion ${ci.done ? 'done' : ''}" id="acc-${p.id}">
+      <div class="acc-header" onclick="toggleAccordion('${p.id}')">
+        <div class="acc-prayer-info">
+          <div class="acc-prayer-ar">${p.ar}</div>
+          <div class="acc-prayer-en">${p.en}</div>
+          <div class="acc-prayer-time">${p.time}</div>
+        </div>
+        <div class="acc-badge ${ci.done ? 'done-badge' : ''}">${ci.done ? '✦ Done' : 'Tap to open'}</div>
+        <div class="acc-chevron">▼</div>
+      </div>
+      <div class="acc-body" id="acc-body-${p.id}">
+        <div style="padding-top:14px">
+          ${getMicroTasks(p.id).map(t => `
+            <div class="micro-task ${ci.tasks[t.id] ? 'done' : ''}" onclick="toggleMicro('${p.id}','${t.id}')" id="mt-${p.id}-${t.id}">
+              <div class="micro-box">${ci.tasks[t.id] ? '✓' : ''}</div>
+              <div class="micro-label">${t.label}</div>
+            </div>
+          `).join('')}
+          
+          <div class="affirm-block">
+            <div class="affirm-block-label">✦ Your Affirmation</div>
+            <div class="affirm-text ${ci.affirmText ? '' : 'loading'}" id="ci-affirm-${p.id}">
+              ${ci.affirmText || 'Tap below to generate affirmation...'}
+            </div>
+            <div class="flex-between mt-12">
+              <button class="btn-ghost" onclick="event.stopPropagation();regenCheckinAffirm('${p.id}')">↺ New</button>
+              ${!ci.affirmText ? `<button class="btn-ghost" onclick="event.stopPropagation();fetchCheckinAffirm('${p.id}')">Generate ✦</button>` : ''}
+            </div>
+          </div>
+
+          <button class="btn-gold mt-8 ${ci.done ? '' : ''}" onclick="completeCheckin('${p.id}')">
+            ${ci.done ? '✦ Check-in Complete' : `✓ Complete ${p.en} check-in`}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let openAccordion = null;
+
+function toggleAccordion(prayerId) {
+  const acc = document.getElementById('acc-' + prayerId);
+  if (!acc) return;
+  const isOpen = acc.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.accordion').forEach(a => a.classList.remove('open'));
+  openAccordion = null;
+  if (!isOpen) {
+    acc.classList.add('open');
+    openAccordion = prayerId;
+    // Auto-fetch affirmation if not cached
+    if (!state.checkins[prayerId].affirmText) {
+      fetchCheckinAffirm(prayerId);
+    }
+  }
+}
+
+function toggleMicro(prayerId, taskId) {
+  state.checkins[prayerId].tasks[taskId] = !state.checkins[prayerId].tasks[taskId];
+  saveState();
+  // Update just the micro-task UI
+  const mt = document.getElementById(`mt-${prayerId}-${taskId}`);
+  if (mt) {
+    const done = state.checkins[prayerId].tasks[taskId];
+    mt.classList.toggle('done', done);
+    mt.querySelector('.micro-box').textContent = done ? '✓' : '';
+  }
+}
+
+function regenCheckinAffirm(prayerId) {
+  state.checkins[prayerId].affirmText = '';
+  saveState();
+  fetchCheckinAffirm(prayerId);
+}
+
+function completeCheckin(prayerId) {
+  state.checkins[prayerId].done = true;
+  // Mark all micro tasks as done
+  getMicroTasks(prayerId).forEach(t => {
+    state.checkins[prayerId].tasks[t.id] = true;
+  });
+  saveState();
+  renderCheckins();
+  updateRing();
+  updateStreak();
+  renderStreakRow();
+  renderStatBars();
+  const p = PRAYERS.find(x => x.id === prayerId);
+  showToast(`${p.en} check-in complete — الحمد لله 🌙`);
+}
+
+// ── GRATITUDE ──
+function saveGratitude() {
+  const ta = document.getElementById('grat-textarea');
+  if (!ta) return;
+  state.grat = ta.value;
+  if (state.grat.length > 5) {
+    state.habits.gratitude = true;
+  }
+  saveState();
+  renderMorningChecklist();
+  updateRing();
+  updateStreak();
+  renderStreakRow();
+  showToast('Gratitude saved — الحمد لله 🌿');
+}
+
+// ── SLEEP CHECKLIST ──
+function renderSleepChecklist() {
+  const list = document.getElementById('sleep-checklist');
+  if (!list) return;
+  list.innerHTML = SLEEP_ITEMS.map(s => `
+    <div class="sleep-item ${state.sleep[s.id] ? 'done' : ''}" onclick="toggleSleep('${s.id}')" id="si-${s.id}">
+      <div class="sleep-box">${state.sleep[s.id] ? '✓' : ''}</div>
+      <div class="sleep-label">${s.label}</div>
+    </div>
+  `).join('');
+}
+
+function toggleSleep(itemId) {
+  state.sleep[itemId] = !state.sleep[itemId];
+  saveState();
+  const si = document.getElementById('si-' + itemId);
+  if (si) {
+    si.classList.toggle('done', state.sleep[itemId]);
+    si.querySelector('.sleep-box').textContent = state.sleep[itemId] ? '✓' : '';
+  }
+  if (state.sleep[itemId]) showToast('بارك الله فيك ✦');
+}
+
+// ── SLEEP REFLECTION ──
+function saveSleepNote() {
+  const ta = document.getElementById('sleep-note');
+  if (!ta) return;
+  state.sleepNote = ta.value;
+  saveState();
+  showToast('Reflection saved — جزاك الله خيرًا 🌙');
+}
+
+// ── INIT ──
+function init() {
+  // Set date
+  const dateEl = document.getElementById('home-date');
+  if (dateEl) dateEl.textContent = formatDate();
+  const hijriEl = document.getElementById('hijri-date');
+  if (hijriEl) hijriEl.textContent = getHijriDate();
+
+  // Render all sections
+  renderPrayerGrid();
+  renderMorningChecklist();
+  renderStreakRow();
+  renderStatBars();
+  renderCheckins();
+  renderSleepChecklist();
+  updateRepUI();
+  updateRing();
+
+  // Restore gratitude textarea
+  const gta = document.getElementById('grat-textarea');
+  if (gta && state.grat) gta.value = state.grat;
+
+  // Restore sleep note
+  const sn = document.getElementById('sleep-note');
+  if (sn && state.sleepNote) sn.value = state.sleepNote;
+
+  // Restore daily affirmation if cached
+  if (state.dailyAffirm) {
+    const el = document.getElementById('hero-affirm-text');
+    if (el) el.textContent = state.dailyAffirm;
+  }
+
+  // Restore sleep affirmation if cached
+  if (state.sleepAffirm) {
+    const el = document.getElementById('sleep-affirm-text');
+    if (el) el.textContent = state.sleepAffirm;
+  }
+
+  // Update streak based on today
+  updateStreak();
+}
+
+// Run on load
+document.addEventListener('DOMContentLoaded', init);
+
+// Also run immediately (in case DOMContentLoaded already fired)
+if (document.readyState === 'loading') {
+  // Already set up above
+} else {
+  init();
+}
+</script>
+</body>
+</html>
