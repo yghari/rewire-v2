@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK with Web2APK
 
 on:
   workflow_dispatch:
@@ -15,30 +15,22 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install PWA2APK
+      - name: Install Web2APK
         run: |
-          npm install -g pwa2apk
+          npm install -g web2apk
           
-      - name: Create manifest
+      - name: Prepare web files
         run: |
-          cat > manifest.json << 'EOF'
-          {
-            "name": "Rewire",
-            "short_name": "Rewire",
-            "start_url": "/",
-            "display": "standalone",
-            "theme_color": "#0b1120",
-            "background_color": "#0b1120"
-          }
-          EOF
+          mkdir -p webapp
+          cp index.html webapp/
           
-      - name: Build APK directly from URL
+      - name: Build APK
         run: |
-          pwa2apk generate \
-            --url https://yghari.github.io/rewire-v2/ \
+          web2apk create \
+            --input webapp \
+            --output Rewire.apk \
             --name Rewire \
-            --package com.rewire.app \
-            --output Rewire.apk
+            --package com.rewire.app
           
       - name: Upload APK
         uses: actions/upload-artifact@v4
