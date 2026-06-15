@@ -17,127 +17,169 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
       - name: Accept Android SDK licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Install Android build tools
+      - name: Install Android SDK components
         run: |
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager \
             "build-tools;34.0.0" \
             "platforms;android-34" \
             "platform-tools"
 
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
-
       - name: Prepare web files
         run: |
           mkdir -p webapp
           cp rewire.html webapp/index.html
-          cat > webapp/manifest.json << 'EOF'
-          {
-            "name": "Rewire",
-            "short_name": "Rewire",
-            "start_url": "/",
-            "display": "standalone",
-            "theme_color": "#0b1120",
-            "background_color": "#0b1120",
-            "icons": [
-              {
-                "src": "https://via.placeholder.com/512",
-                "sizes": "512x512",
-                "type": "image/png"
+
+      - name: Create TWA Android project
+        run: |
+          mkdir -p twa-project/app/src/main/res/values
+          mkdir -p twa-project/app/src/main/res/xml
+          mkdir -p twa-project/app/src/main/java/com/rewire/app
+
+          # ── settings.gradle ──────────────────────────────────────────────
+          cat > twa-project/settings.gradle << 'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
               }
-            ]
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "Rewire"
+          include ':app'
+          EOF
+
+          # ── root build.gradle ─────────────────────────────────────────────
+          cat > twa-project/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application' version '8.2.2' apply false
           }
           EOF
 
-      - name: Start web server
-        run: |
-          cd webapp
-          python3 -m http.server 8080 > /dev/null 2>&1 &
-          sleep 5
+          # ── gradle wrapper properties ─────────────────────────────────────
+          mkdir -p twa-project/gradle/wrapper
+          cat > twa-project/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.2-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
 
-      - name: Configure Bubblewrap (JDK + SDK paths)
-        run: |
-          mkdir -p ~/.bubblewrap
-          cat > ~/.bubblewrap/config.json << EOF
-          {
-            "jdkPath": "$JAVA_HOME",
-            "androidSdkPath": "$ANDROID_HOME"
+          # ── app/build.gradle ─────────────────────────────────────────────
+          cat > twa-project/app/build.gradle << 'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.rewire.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId 'com.rewire.app'
+                  minSdk 19
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0.0'
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      signingConfig signingConfigs.debug
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+          }
+          dependencies {
+              implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
           }
           EOF
 
-      - name: Write twa-manifest.json
-        run: |
-          mkdir -p twa-project
-          cat > twa-project/twa-manifest.json << 'EOF'
-          {
-            "packageId": "com.rewire.app",
-            "host": "localhost",
-            "name": "Rewire",
-            "launcherName": "Rewire",
-            "display": "standalone",
-            "themeColor": "#0b1120",
-            "navigationColor": "#0b1120",
-            "navigationColorDark": "#0b1120",
-            "navigationDividerColor": "#0b1120",
-            "navigationDividerColorDark": "#0b1120",
-            "backgroundColor": "#0b1120",
-            "enableNotifications": false,
-            "startUrl": "/",
-            "iconUrl": "https://via.placeholder.com/512",
-            "splashScreenFadeOutDuration": 300,
-            "signingKey": {
-              "path": "android.keystore",
-              "alias": "android"
-            },
-            "appVersionCode": 1,
-            "appVersionName": "1.0.0",
-            "shortcuts": [],
-            "generatorApp": "bubblewrap-cli",
-            "webManifestUrl": "http://localhost:8080/manifest.json",
-            "fallbackType": "customtabs",
-            "features": {},
-            "alphaDependencies": { "enabled": false },
-            "enableSiteSettingsShortcut": true,
-            "isChromeOSOnly": false,
-            "isMetaQuest": false,
-            "fullScopeUrl": "http://localhost:8080/",
-            "minSdkVersion": 19,
-            "orientation": "default"
-          }
+          # ── AndroidManifest.xml ──────────────────────────────────────────
+          cat > twa-project/app/src/main/AndroidManifest.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:label="@string/app_name"
+                  android:theme="@style/Theme.AppCompat.NoActionBar"
+                  android:allowBackup="true">
+                  <activity
+                      android:name="com.google.androidbrowserhelper.trusted.LauncherActivity"
+                      android:exported="true">
+                      <meta-data
+                          android:name="android.support.customtabs.trusted.DEFAULT_URL"
+                          android:value="@string/app_url" />
+                      <intent-filter android:autoVerify="true">
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                      <intent-filter android:autoVerify="true">
+                          <action android:name="android.intent.action.VIEW"/>
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE"/>
+                          <data android:scheme="https" android:host="@string/app_host"/>
+                      </intent-filter>
+                  </activity>
+                  <service
+                      android:name="com.google.androidbrowserhelper.trusted.DelegationService"
+                      android:exported="true"
+                      android:enabled="true">
+                      <intent-filter>
+                          <action android:name="android.support.customtabs.trusted.TRUSTED_WEB_ACTIVITY_SERVICE"/>
+                          <category android:name="android.intent.category.DEFAULT"/>
+                      </intent-filter>
+                  </service>
+              </application>
+          </manifest>
           EOF
 
-      - name: Generate Android project via bubblewrap init (with retry)
-        run: |
-          cd twa-project
-          for attempt in 1 2 3; do
-            echo "Attempt $attempt..."
-            bubblewrap update --skipVersionUpgrade && break
-            echo "Attempt $attempt failed, retrying in 10s..."
-            sleep 10
-          done
+          # ── strings.xml ──────────────────────────────────────────────────
+          cat > twa-project/app/src/main/res/values/strings.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <string name="app_name">Rewire</string>
+              <string name="app_url">https://rewire.app</string>
+              <string name="app_host">rewire.app</string>
+          </resources>
+          EOF
+
+          # ── colors.xml ───────────────────────────────────────────────────
+          cat > twa-project/app/src/main/res/values/colors.xml << 'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="colorPrimary">#0b1120</color>
+              <color name="colorPrimaryDark">#0b1120</color>
+              <color name="colorAccent">#0b1120</color>
+          </resources>
+          EOF
+
+          # ── gradle wrapper script ────────────────────────────────────────
+          curl -sL https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar \
+            -o twa-project/gradle/wrapper/gradle-wrapper.jar
+
+          curl -sL https://raw.githubusercontent.com/gradle/gradle/master/gradlew \
+            -o twa-project/gradlew
+          chmod +x twa-project/gradlew
 
       - name: Build APK
-        env:
-          BUBBLEWRAP_KEYSTORE_PASSWORD: android
-          BUBBLEWRAP_KEY_PASSWORD: android
         run: |
           cd twa-project
-          bubblewrap build
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Rewire-App
-          path: |
-            twa-project/app-release-signed.apk
-            twa-project/app-release-unsigned.apk
-            twa-project/app/build/outputs/apk/**/*.apk
+          path: twa-project/app/build/outputs/apk/**/*.apk
           if-no-files-found: warn
