@@ -12,19 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Setup Java (pre-install to avoid Bubblewrap prompts)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           
-      - name: Setup Android SDK (pre-install to avoid prompts)
-        uses: android-actions/setup-android@v3
-        
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+          
+      - name: Accept Android SDK licenses (non-interactive)
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
           
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
@@ -48,33 +49,26 @@ jobs:
       - name: Start web server
         run: |
           cd webapp
-          python3 -m http.server 8080 &
+          python3 -m http.server 8080 > /dev/null 2>&1 &
           cd ..
           sleep 5
           
       - name: Initialize Bubblewrap (auto-answer no to JDK/Android SDK)
         run: |
-          printf "n\nn\n" | bubblewrap init \
+          echo -e "n\nn" | bubblewrap init \
             --manifest http://localhost:8080/manifest.json \
             --directory twa-project
-          
-      - name: Build APK
+            
+      - name: Build APK (auto-answer prompts)
         run: |
           cd twa-project
-          printf "\n" | bubblewrap build
-          
-      - name: Find and upload APK
-        run: |
-          echo "Looking for APK files..."
-          find . -name "*.apk" -type f
-          # Copy any found APK to root
-          find twa-project -name "*.apk" -exec cp {} ./Rewire.apk \; 2>/dev/null || echo "No APK found yet"
+          echo "" | bubblewrap build
           
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Rewire-App
           path: |
-            **/*.apk
+            twa-project/app-release-unsigned.apk
             twa-project/app/build/outputs/apk/**/*.apk
           if-no-files-found: warn
