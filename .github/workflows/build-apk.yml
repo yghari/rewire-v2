@@ -15,16 +15,17 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'oracle'
+          distribution: 'temurin'
           java-version: '17'
           
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        
-      - name: Install dependencies
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install Bubblewrap only
         run: |
           npm install -g @bubblewrap/cli
-          npm install -g http-server
           
       - name: Prepare web files
         run: |
@@ -44,22 +45,31 @@ jobs:
           }
           EOF
           
-      - name: Start web server
+      - name: Start simple Python server (no installation needed)
         run: |
           cd webapp
-          http-server -p 8080 &
+          python3 -m http.server 8080 &
           cd ..
-          sleep 5
+          sleep 3
           
+      - name: Initialize Bubblewrap project
+        run: |
+          bubblewrap init \
+            --manifest http://localhost:8080/manifest.json \
+            --directory twa-project
+            
       - name: Build APK
         run: |
-          bubblewrap init --manifest http://localhost:8080/manifest.json --directory app
-          cd app
-          bubblewrap build --skipSigning
+          cd twa-project
+          bubblewrap build
           
-      - name: Upload artifact
+      - name: Find and upload APK
+        run: |
+          find twa-project -name "*.apk" -exec cp {} ./Rewire-App.apk \;
+          
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Rewire-App-APK
-          path: app/app-release-unsigned.apk
-          compression-level: 0
+          name: Rewire-Android-App
+          path: ./Rewire-App.apk
+          if-no-files-found: error
