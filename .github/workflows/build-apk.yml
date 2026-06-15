@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK with Capacitor
 
 on:
   workflow_dispatch:
@@ -15,15 +15,39 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install PWABuilder
-        run: npm install -g @pwabuilder/cli
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
         
-      - name: Build Android package
+      - name: Accept licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+        
+      - name: Build APK
         run: |
-          pwabuilder package https://yghari.github.io/rewire-v2/
+          # Create Capacitor project
+          npm install -g @capacitor/cli
+          mkdir app && cd app
+          npm init -y
+          npm install @capacitor/core @capacitor/android
+          mkdir www
+          cp ../index.html www/index.html
+          cp ../manifest.json www/ || true
+          
+          # Initialize Capacitor
+          npx cap init Rewire com.rewire.app --web-dir www
+          npx cap add android
+          
+          # Build APK
+          cd android
+          ./gradlew assembleRelease
           
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Rewire-App
-          path: .pwabuilder/android/**/*.apk
+          path: app/android/app/build/outputs/apk/release/*.apk
