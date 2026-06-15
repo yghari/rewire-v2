@@ -1,5 +1,4 @@
 name: Build APK
-
 on:
   workflow_dispatch:
   push:
@@ -8,33 +7,33 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          
+
       - name: Accept Android SDK licenses (non-interactive)
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          
+
       - name: Install Bubblewrap
         run: npm install -g @bubblewrap/cli
-        
+
       - name: Prepare web files
         run: |
           mkdir -p webapp
           cp rewire.html webapp/index.html
-          
+
           cat > webapp/manifest.json << 'EOF'
           {
             "name": "Rewire",
@@ -45,25 +44,25 @@ jobs:
             "background_color": "#0b1120"
           }
           EOF
-          
+
       - name: Start web server
         run: |
           cd webapp
           python3 -m http.server 8080 > /dev/null 2>&1 &
           cd ..
           sleep 5
-          
-      - name: Initialize Bubblewrap (auto-answer no to JDK/Android SDK)
+
+      - name: Initialize Bubblewrap
         run: |
-          echo -e "n\nn" | bubblewrap init \
+          printf 'n\n%s\n' "$JAVA_HOME" | bubblewrap init \
             --manifest http://localhost:8080/manifest.json \
             --directory twa-project
-            
-      - name: Build APK (auto-answer prompts)
+
+      - name: Build APK
         run: |
           cd twa-project
-          echo "" | bubblewrap build
-          
+          printf '\n' | bubblewrap build
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
