@@ -1,8 +1,8 @@
 {
-  "name": "Rewire - Daily Islamic Companion",
+  "name": "Rewire",
   "short_name": "Rewire",
-  "description": "Daily Islamic mind rewiring companion with prayer tracking, affirmations, and habits",
-  "start_url": "/rewire-app/rewire.html",
+  "description": "Daily Islamic Companion",
+  "start_url": "rewire.html",
   "display": "standalone",
   "theme_color": "#0b1120",
   "background_color": "#0b1120",
