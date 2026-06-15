@@ -1,74 +1,65 @@
-name: Build Rewire APK
+name: Build Android APK
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          
+      - uses: actions/checkout@v4
+      
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'oracle'
           java-version: '17'
           
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
         
-      - name: Generate icons
+      - name: Install dependencies
         run: |
-          # Create simple SVG icons and convert to PNG
-          sudo apt-get update
-          sudo apt-get install -y imagemagick
+          npm install -g @bubblewrap/cli
+          npm install -g http-server
           
-          # Create 192x192 icon
-          convert -size 192x192 xc:#c9a84c -fill '#0b1120' -gravity center -pointsize 100 -annotate 0 "✦" icon-192.png
-          
-          # Create 512x512 icon
-          convert -size 512x512 xc:#c9a84c -fill '#0b1120' -gravity center -pointsize 260 -annotate 0 "✦" icon-512.png
-          
-      - name: Create local server for manifest
+      - name: Prepare web files
         run: |
-          # Start a simple HTTP server in background
-          python3 -m http.server 8000 &
-          sleep 3
+          mkdir -p webapp
+          cp rewire.html webapp/index.html
           
-      - name: Initialize Bubblewrap project
+          # Create manifest
+          cat > webapp/manifest.json << 'EOF'
+          {
+            "name": "Rewire Islamic Companion",
+            "short_name": "Rewire",
+            "start_url": "index.html",
+            "display": "standalone",
+            "theme_color": "#0b1120",
+            "background_color": "#0b1120",
+            "orientation": "portrait"
+          }
+          EOF
+          
+      - name: Start web server
         run: |
-          bubblewrap init \
-            --manifest http://localhost:8000/manifest.json \
-            --directory twa-project
-            
-      - name: Update TWA configuration
-        run: |
-          cd twa-project
-          # Set the correct host and path
-          sed -i 's|hostToRewrite:.*|hostToRewrite: "localhost:8000"|' twa-manifest.json
-          sed -i 's|startUrl:.*|startUrl: "/rewire.html"|' twa-manifest.json
+          cd webapp
+          http-server -p 8080 &
+          cd ..
+          sleep 5
           
       - name: Build APK
         run: |
-          cd twa-project
-          bubblewrap build
+          bubblewrap init --manifest http://localhost:8080/manifest.json --directory app
+          cd app
+          bubblewrap build --skipSigning
           
-      - name: Find and rename APK
-        run: |
-          find . -name "*.apk" -exec cp {} ./rewire-app.apk \;
-          
-      - name: Upload APK
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Rewire-APK
-          path: rewire-app.apk
+          name: Rewire-App-APK
+          path: app/app-release-unsigned.apk
+          compression-level: 0
