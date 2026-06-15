@@ -1,4 +1,4 @@
-name: Build APK with Web2APK
+name: Build APK
 
 on:
   workflow_dispatch:
@@ -15,25 +15,15 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install Web2APK
+      - name: Install PWABuilder CLI
+        run: npm install -g @pwabuilder/cli
+        
+      - name: Build APK from your URL
         run: |
-          npm install -g web2apk
-          
-      - name: Prepare web files
-        run: |
-          mkdir -p webapp
-          cp index.html webapp/
-          
-      - name: Build APK
-        run: |
-          web2apk create \
-            --input webapp \
-            --output Rewire.apk \
-            --name Rewire \
-            --package com.rewire.app
+          pwabuilder package https://yghari.github.io/rewire-v2/rewire.html
           
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Rewire-App
-          path: Rewire.apk
+          path: .pwabuilder/android/**/*.apk
