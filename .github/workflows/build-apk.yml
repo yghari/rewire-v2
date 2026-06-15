@@ -1,4 +1,4 @@
-name: Build APK with Capacitor
+name: Build APK
 
 on:
   workflow_dispatch:
@@ -15,39 +15,33 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-          
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        
-      - name: Accept licenses
-        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
-        
-      - name: Build APK
+      - name: Install PWA2APK
         run: |
-          # Create Capacitor project
-          npm install -g @capacitor/cli
-          mkdir app && cd app
-          npm init -y
-          npm install @capacitor/core @capacitor/android
-          mkdir www
-          cp ../index.html www/index.html
-          cp ../manifest.json www/ || true
+          npm install -g pwa2apk
           
-          # Initialize Capacitor
-          npx cap init Rewire com.rewire.app --web-dir www
-          npx cap add android
+      - name: Create manifest
+        run: |
+          cat > manifest.json << 'EOF'
+          {
+            "name": "Rewire",
+            "short_name": "Rewire",
+            "start_url": "/",
+            "display": "standalone",
+            "theme_color": "#0b1120",
+            "background_color": "#0b1120"
+          }
+          EOF
           
-          # Build APK
-          cd android
-          ./gradlew assembleRelease
+      - name: Build APK directly from URL
+        run: |
+          pwa2apk generate \
+            --url https://yghari.github.io/rewire-v2/ \
+            --name Rewire \
+            --package com.rewire.app \
+            --output Rewire.apk
           
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Rewire-App
-          path: app/android/app/build/outputs/apk/release/*.apk
+          path: Rewire.apk
