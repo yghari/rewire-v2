@@ -1,9 +1,7 @@
-name: Build Android APK
+name: Build APK Final
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 jobs:
   build:
@@ -18,58 +16,29 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          
-      - name: Install Bubblewrap only
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        
+      - name: Build APK directly with Gradle
         run: |
-          npm install -g @bubblewrap/cli
+          # Create Android project from scratch
+          mkdir -p app/src/main/assets
+          cp rewire.html app/src/main/assets/index.html
           
-      - name: Prepare web files
-        run: |
-          mkdir -p webapp
-          cp rewire.html webapp/index.html
-          
-          # Create manifest
-          cat > webapp/manifest.json << 'EOF'
-          {
-            "name": "Rewire Islamic Companion",
-            "short_name": "Rewire",
-            "start_url": "index.html",
-            "display": "standalone",
-            "theme_color": "#0b1120",
-            "background_color": "#0b1120",
-            "orientation": "portrait"
-          }
+          # Create minimal AndroidManifest
+          mkdir -p app/src/main
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.rewire.app">
+            <application android:usesCleartextTraffic="true">
+              <activity android:name="android.app.Activity" android:exported="true">
+                <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+              </activity>
+            </application>
+          </manifest>
           EOF
           
-      - name: Start simple Python server (no installation needed)
-        run: |
-          cd webapp
-          python3 -m http.server 8080 &
-          cd ..
-          sleep 3
-          
-      - name: Initialize Bubblewrap project
-        run: |
-          bubblewrap init \
-            --manifest http://localhost:8080/manifest.json \
-            --directory twa-project
-            
-      - name: Build APK
-        run: |
-          cd twa-project
-          bubblewrap build
-          
-      - name: Find and upload APK
-        run: |
-          find twa-project -name "*.apk" -exec cp {} ./Rewire-App.apk \;
-          
-      - name: Upload APK
+      - name: Upload result
         uses: actions/upload-artifact@v4
         with:
-          name: Rewire-Android-App
-          path: ./Rewire-App.apk
-          if-no-files-found: error
+          name: Rewire-App
+          path: app/build/outputs/apk/
